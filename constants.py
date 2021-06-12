@@ -17,10 +17,12 @@ class ResultShot(Enum):
     hit = 2      # Результат выстрела - попадание
     sink = 3     # Потоплен
 
+
 class StatusBoat(Enum):
     alive = 1  # Не поврежден
     hole = 2  # Есть пробоины
     sink = 3  # Потоплен
+
 
 class Orientation(Enum):
     horizontal = 1
@@ -28,10 +30,10 @@ class Orientation(Enum):
 
 
 class TypeBoat(Enum):
-    deck_1 = 4
-    deck_2 = 3
-    deck_3 = 2
-    deck_4 = 1
+    deck_1 = 1
+    deck_2 = 2
+    deck_3 = 3
+    deck_4 = 4
 
 
 class StatusGame(Enum):
@@ -40,6 +42,11 @@ class StatusGame(Enum):
     WIN = 2  # Победа
     CHANGE_PLAYER = 3  # Переход хода другому игроку
 
+
+class StatusPlayer(Enum):
+    TO_FIRE = 1  # Мы обстреливаем
+    UNDER_FIRE = 2  # Нас обстреливают
+    SET_BOAT = 3  # Рамещаем корабли
 
 
 MES_ERROR_COORDINATE = 'Неправильное задание координаты'

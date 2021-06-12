@@ -1,15 +1,10 @@
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, Bot
 from telegram.ext import CommandHandler, MessageHandler, Filters, commandhandler
 from telegram.ext import CallbackContext, Dispatcher, ConversationHandler
+from blinker import signal
 
 import constants as const
-from player import RealPlayer, Simulator
-from game import Game
-
-
-lst_games: list = list()  # Список раундов
-lst_no_players: list = list()  # Список потенциальных игроков
-lst_players: list = list()  # Список уже играющих игроков
+from player import Player, RealPlayer, Simulator
 
 
 def cmd_start(update: Update, context: CallbackContext) -> None:
@@ -20,12 +15,10 @@ def cmd_start(update: Update, context: CallbackContext) -> None:
     Проверяем наличие игрока в списке уже играющих игроков, если он там уже есть - сообщаем об этом
     """
     player_id = update.message.from_user.id
-    for game in lst_games:
-        player_a = game.player_a.player_id
-        player_b = game.player_b.player_id
-        if player_id == player_a or player_id == player_b:
-            update.message.reply_text(const.MES_ALREADY_IN_GAME.format(player_id), reply_markup=ReplyKeyboardRemove())
-            return
+    player = Player.find_player(player_id)
+    if player is not None:
+        update.message.reply_text(const.MES_ALREADY_IN_GAME.format(player_id), reply_markup=ReplyKeyboardRemove())
+        return
     buttons = const.START_BUTTONS
     keyboard = ReplyKeyboardMarkup(buttons, resize_keyboard=True)
     name = update.message.from_user.first_name
@@ -40,11 +33,9 @@ def choice_bot(update: Update, context: CallbackContext) -> None:
     player_name = update.message.from_user.first_name
     bot = update.message.bot
     chat = update.message.chat.id
-    player = RealPlayer(player_id, player_name, chat)
-    simulator = Simulator()
-    game = Game(player, simulator, bot)
-    game.run()
-
+    player = RealPlayer(player_id, player_name, chat, bot)
+    simulator = Simulator(chat_id=chat, bot=bot)
+    # TODO Что делаем дальше
 
 def get_allocation(bot: Bot, chat_id: int, player_id: int) -> None:
     # Запрашиваем координаты четерехпалубного корабля
@@ -54,18 +45,14 @@ def get_allocation(bot: Bot, chat_id: int, player_id: int) -> None:
 
 def cmd_quit(update: Update, context: CallbackContext) -> None:
     """ 
-    Выходим из игры. Находим в в списке игр игруЮ  в котрой играет данный игрок,
+    Выходим из игры. Находим в в списке игр игру,  в котрой играет данный игрок,
     удадем из нее игроков, затем удаляем данную игру из списка игр, выходим
     """
     # TODO посмотреть как очищать историю чата при выходе
     player_id = update.message.from_user.id
-    for game in lst_games:
-        if game.player_a.player_id == player_id or game.player_b.player_id == player_id:
-            game.delete_players()
-            lst_games.remove(game)
-            context.bot.send_message(update.message.chat_id, text=const.MES_QUIT)
-            break
-
+    Player.delete_from_lst(player_id)
+    context.bot.send_message(update.message.chat_id, text=const.MES_QUIT)
+    
 
 def choice_partner(update: Update, context: CallbackContext) -> None:
     update.message.reply_text("Пока не реализовано", reply_markup=ReplyKeyboardRemove())

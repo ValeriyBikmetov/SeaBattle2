@@ -3,9 +3,11 @@
 from __future__ import annotations
 from typing import Optional
 import random
+from telegram import Bot
 
-from constants import ValueCells, TypeBoat, StatusGame
+from constants import ValueCells, TypeBoat, StatusPlayer
 from battle_array import  BattleArray, InfoArray, SimulatorInfo
+
 
 class Player:
     """
@@ -17,57 +19,53 @@ class Player:
         battle_array - поле своих кораблей
         info - поле предполагаемого расположения кораблей противника
         opponent - ссылка на противника
-        game - объект его игры с прортивником или ботом
+        status - состояние игрока (стреляетЮ под обстрелом, размещает корабли)
     Содержит методы:
         def __init__(self, bot, player_id, first_name, chat_id): Конструктор
-        геттеры и сеттеры игрового и информационного полей
     """
 
-    all_players = []  # Здесь хранятся ссылки на всех созданных игроков
+    all_players = {}  # Здесь хранятся ссылки на всех созданных игроков
 
-    def __init__(self, player_id: int = None, first_name: str = None, chat_id: int = None) -> None:
+    def __init__(self, player_id: int = None, first_name: str = None, chat_id: int = None, bot: Bot = None) -> None:
         self.player_id = player_id
         self.name = first_name
         self.chat = chat_id
+        self.bot = bot
         self.battle_array = BattleArray(self)
         self.info = InfoArray(self)
         self.opponent: Player = None
-        self.game: 'Game' = None
-        self.__class__.all_players.append(self)
+        self.status = StatusPlayer.SET_BOAT
+        self.__class__.all_players[player_id] = self
 
     def __eq__(self, other: Player) -> bool:
         return self.player_id == other.player_id
 
     @classmethod
     def find_player(cls, identity: int) -> Player:
-        for item in cls.all_players:
-            if item.player_id == identity:
-                return item
-        else:
-            return None
+        return cls.all_players.get(identity)
 
     @classmethod
     def delete_from_lst(cls, identity: int) -> bool:
-        for item in cls.all_players:
-            if item.player_id == identity:
-                cls.all_players.remove(item)
-                return True
-        else:
-            return False
+        if identity in cls.all_players:
+            del( cls.all_players[identity])
 
 
 class RealPlayer(Player):
-    def __init__(self, player_id: int = None, first_name: str = None, chat_id: int = None) -> None:
-        super().__init__(player_id, first_name, chat_id)
+    """ 
+    Класс реалльного игрока (человека), наследует класс PLayer
+    Дополнительные поля: список количества устноаленных кораблей
+    self.counts: list[int] = [0, 0, 0, 0]
+
+    """
+    def __init__(self, player_id: int = None, first_name: str = None, chat_id: int = None, bot: Bot = None) -> None:
+        super().__init__(player_id, first_name, chat_id, bot)
         self.counts: list[int] = [0, 0, 0, 0]
+
 
     def allocation(self) -> None:
         """
         Запрашивает координаты кораблей для размещения и размещает их на поле
         """
-        ...
-
-    def gunnery(self) -> tuple[int, StatusGame]:
         ...
 
     def choice_partner(self) -> None:
@@ -78,8 +76,8 @@ class RealPlayer(Player):
 
 
 class Simulator(Player):
-    def __init__(self, player_id: int = None, first_name: str = None, chat_id: int = None) -> None:
-        super().__init__(player_id, first_name, chat_id)
+    def __init__(self, player_id: int = None, first_name: str = None, chat_id: int = None, bot: Bot = None) -> None:
+        super().__init__(player_id, first_name, chat_id, bot)
 
     def allocation(self) -> None:
         """

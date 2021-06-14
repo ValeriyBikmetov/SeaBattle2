@@ -28,7 +28,7 @@ def main():
     add_messgae_handler(dp)
 
     # Запускаем таймер таймаута
-    timer_timeout(lst_games, const.TIMEOUT, bot)
+#    timer_timeout(lst_games, const.TIMEOUT, bot)
 
     # Запускаем бот
     updater.start_polling()

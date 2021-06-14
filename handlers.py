@@ -1,3 +1,4 @@
+from itertools import count
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, Update, Bot
 from telegram.ext import CommandHandler, MessageHandler, Filters, commandhandler
 from telegram.ext import CallbackContext, Dispatcher, ConversationHandler
@@ -5,6 +6,11 @@ from blinker import signal
 
 import constants as const
 from player import Player, RealPlayer, Simulator
+
+
+    
+allocation = signal("allocation")
+allocation.connect(Player.signal_allocation)
 
 
 def cmd_start(update: Update, context: CallbackContext) -> None:
@@ -26,16 +32,18 @@ def cmd_start(update: Update, context: CallbackContext) -> None:
 
 
 def choice_bot(update: Update, context: CallbackContext) -> None:
-    """
-    Создаем объект игрока. Создаем имитатор игрока. Создаем объект Game. Запускаем процесс игры
-    """
+    """ Создаем объект игрока. Создаем имитатор игрока. Запускаем процесс игры """
     player_id = update.message.from_user.id
     player_name = update.message.from_user.first_name
     bot = update.message.bot
     chat = update.message.chat.id
     player = RealPlayer(player_id, player_name, chat, bot)
     simulator = Simulator(chat_id=chat, bot=bot)
-    # TODO Что делаем дальше
+    message = const.Message(simulator.player_id, const.TypeMessage.LOCATE, "")
+    allocation.send(message)
+    message = const.Message(player_id, const.TypeMessage.LOCATE, "")
+    allocation.send(message)
+    update.message.reply_text(const.MES_ALREADY_IN_GAME.format(player_id), reply_markup=ReplyKeyboardRemove())
 
 def get_allocation(bot: Bot, chat_id: int, player_id: int) -> None:
     # Запрашиваем координаты четерехпалубного корабля
@@ -44,13 +52,10 @@ def get_allocation(bot: Bot, chat_id: int, player_id: int) -> None:
 
 
 def cmd_quit(update: Update, context: CallbackContext) -> None:
-    """ 
-    Выходим из игры. Находим в в списке игр игру,  в котрой играет данный игрок,
-    удадем из нее игроков, затем удаляем данную игру из списка игр, выходим
-    """
+    """ Выходим из игры и удадем игроков """
     # TODO посмотреть как очищать историю чата при выходе
     player_id = update.message.from_user.id
-    Player.delete_from_lst(player_id)
+    Player.delete_players(player_id)
     context.bot.send_message(update.message.chat_id, text=const.MES_QUIT)
     
 

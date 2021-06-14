@@ -4,8 +4,7 @@ from __future__ import annotations
 from typing import Optional
 import random
 from telegram import Bot
-
-from constants import ValueCells, TypeBoat, StatusPlayer
+from constants import ValueCells, TypeBoat, StatusPlayer, Message
 from battle_array import  BattleArray, InfoArray, SimulatorInfo
 
 
@@ -45,9 +44,24 @@ class Player:
         return cls.all_players.get(identity)
 
     @classmethod
+    def delete_players(cls, identity: int) -> bool:
+        player: Player = cls.find_player(identity)
+        enemy: Player = player.opponent
+        if enemy:
+            enemy_id: Player = player.opponent.player_id
+            del(cls.all_players[enemy_id])
+        del(cls.all_players[identity])
+
+    @classmethod
     def delete_from_lst(cls, identity: int) -> bool:
         if identity in cls.all_players:
             del( cls.all_players[identity])
+
+    @classmethod
+    def signal_allocation(cls, message: Message):
+        player_id: int = message.player_id
+        player: Player = cls.find_player(player_id)
+        player.allocation(message)
 
 
 class RealPlayer(Player):
@@ -62,32 +76,37 @@ class RealPlayer(Player):
         self.counts: list[int] = [0, 0, 0, 0]
 
 
-    def allocation(self) -> None:
+    def allocation(self, message: Message) -> None:
         """
         Запрашивает координаты кораблей для размещения и размещает их на поле
         """
         ...
 
     def choice_partner(self) -> None:
-        """
-        Диалог выбора партнера
-        """
+        """ Диалог выбора партнера """
         return None
 
 
 class Simulator(Player):
+    """ Класс имитирующий поведение игргока в игре с реальным игроком """
     def __init__(self, player_id: int = None, first_name: str = None, chat_id: int = None, bot: Bot = None) -> None:
-        super().__init__(player_id, first_name, chat_id, bot)
+        identify = self.new_id()
+        super().__init__(identify, first_name, chat_id, bot)
+        
+    def new_id(self) -> int:
+        """ Генерирует уникальный идентификатор симулятора как игрока (player_id) """
+        random.seed()
+        player_id = random.randint(1, 1000)
+        while player_id in self.all_players:
+            player_id = random.randint(1, 1000)
+        return player_id
 
-    def allocation(self) -> None:
-        """
-        размещает корабли на поле
-        """
+    def allocation(self, message: Message) -> None:
+        """ размещает корабли на поле """
         self.random_allocation()
 
     def random_allocation(self) -> None:
-        """ Размещает корабли на поле в случайном порядке
-        """
+        """ Размещает корабли на поле в случайном порядке """
         random.seed()  # Инициализируем генератор случайных чисел
         # Размещаем 4-х палубный корабль
         self.boat_random_location(TypeBoat.deck_4)
@@ -103,7 +122,7 @@ class Simulator(Player):
 
     def boat_random_location(self, type_boat: TypeBoat) -> None:
         """
-        :type - тип корабля (количество палуб)
+        type_boat - тип корабля (количество палуб)
         Вырабатываем координаты случайного расположения корабля,
         проверяем их на корректность. Если не корректны ищем другие, пока не станут корректными
         Заполняем игровое поле

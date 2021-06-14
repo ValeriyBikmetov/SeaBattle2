@@ -1,6 +1,7 @@
 # -*- coding utf-8 -*-
 
 from enum import Enum
+from dataclasses import dataclass
 
 
 class ValueCells(Enum):
@@ -49,6 +50,17 @@ class StatusPlayer(Enum):
     SET_BOAT = 3  # Рамещаем корабли
 
 
+class TypeMessage(Enum):
+    LOCATE = 1
+
+
+@dataclass
+class Message:
+    player_id: int
+    type_msg: TypeMessage
+    message: str
+
+
 MES_ERROR_COORDINATE = 'Неправильное задание координаты'
 MES_HIT = 'Попадание'
 MES_MISS = 'Промах'
@@ -60,7 +72,10 @@ MES_YOUR_MOVE = 'Ваш ход'
 MES_OTHER_MOVE = 'Ход противника'
 MES_ALREADY_IN_GAME = '{} вы уже в игре'
 MES_ASK_POSITION = 'Введите координаты {}-х палубного корабля'
-MES_INPUT = "Ввод"
+MES_INPUT_FOUR_DECK = "Введите координаты четырехпалубного корабля"
+MES_INPUT_THREE_DECK = "Введите координаты трехпалубного корабля"
+MES_INPUT_TWO_DECK = "Введите координаты двухпалубного корабля"
+MES_INPUT_ONE_DECK = "Введите координаты однопалубного корабля"
 MES_QUIT = "До свидания"
 
 TIMEOUT = 300.0  # Время бездействия, по истечении котрого иг ра удаляется
